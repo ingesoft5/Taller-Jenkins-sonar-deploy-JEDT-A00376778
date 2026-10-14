@@ -16,3 +16,5 @@ dist/
 .project
 .classpath
 .settings/
+
+.env

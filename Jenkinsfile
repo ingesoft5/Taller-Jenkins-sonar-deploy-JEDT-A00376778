@@ -1,5 +1,10 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image ’maven :3.9.6 - eclipse -temurin -17’
+            args ’-v /root/.m2:/root/.m2 ’ // Monta la cache de Maven para acelerar descargas
+        }
+    }
 
     environment {
         // Nombre del servidor SonarQube configurado en Administrar Jenkins -> System
