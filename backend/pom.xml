@@ -21,7 +21,17 @@
         <sonar.projectKey>product-api</sonar.projectKey>
         <sonar.projectName>product-api</sonar.projectName>
         <sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
+        <!-- Cambia la IP cada vez que se reinicia el EC2 de Nexus -->
+        <nexus.url>http://184.193.31.56:9181</nexus.url>
     </properties>
+
+    <!-- Destino de "mvn deploy"; las credenciales del id nexus-releases van en ~/.m2/settings.xml de Jenkins -->
+    <distributionManagement>
+        <repository>
+            <id>nexus-releases</id>
+            <url>${nexus.url}/repository/maven-releases/</url>
+        </repository>
+    </distributionManagement>
     
     <dependencies>
         <dependency>

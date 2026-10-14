@@ -8,9 +8,6 @@ pipeline {
         PROJECT_KEY       = 'product-api'
         IMAGE_NAME        = 'product-api'
         APP_PORT          = '8085'
-        // Cambia la IP cada vez que se reinicia el EC2 de Nexus
-        NEXUS_MAVEN_REPO     = 'http://184.193.31.56:9181/repository/maven-releases/'
-        NEXUS_CREDENTIALS_ID = 'nexus-credentials'
     }
 
     stages {
@@ -74,27 +71,8 @@ pipeline {
             }
             steps {
                 echo '===> [ETAPA 3] Publicando binario JAR inmutable en Sonatype Nexus OSS...'
-                withCredentials([usernamePassword(credentialsId: "${NEXUS_CREDENTIALS_ID}",
-                                                  usernameVariable: 'NEXUS_USER',
-                                                  passwordVariable: 'NEXUS_PASS')]) {
-                    dir('backend') {
-                        writeFile file: 'jenkins-settings.xml', text: '''<settings>
-  <servers>
-    <server>
-      <id>nexus-releases</id>
-      <username>${env.NEXUS_USER}</username>
-      <password>${env.NEXUS_PASS}</password>
-    </server>
-  </servers>
-</settings>
-'''
-                        sh 'mvn -B -s jenkins-settings.xml deploy -DskipTests -DaltDeploymentRepository=nexus-releases::$NEXUS_MAVEN_REPO'
-                    }
-                }
-            }
-            post {
-                always {
-                    sh 'rm -f backend/jenkins-settings.xml'
+                dir('backend') {
+                    sh 'mvn deploy -DskipTests'
                 }
             }
         }
@@ -125,9 +103,11 @@ pipeline {
                 """
 
                 echo '===> [ETAPA 4] Ejecutando Smoke Test / Healthcheck de disponibilidad HTTP...'
+                // seq en vez de {1..10}: el sh de Jenkins (dash) no expande llaves.
+                // host.docker.internal: Jenkins es un contenedor, su localhost no es el del PC.
                 sh """
-                    for i in {1..10}; do
-                        if curl -s -f http://localhost:${APP_PORT}/api/products; then
+                    for i in \$(seq 1 10); do
+                        if curl -s -f http://host.docker.internal:${APP_PORT}/api/products; then
                             echo "DESPLIEGUE EXITOSO: El microservicio responde correctamente en http://localhost:${APP_PORT}/api/products"
                             exit 0
                         fi
