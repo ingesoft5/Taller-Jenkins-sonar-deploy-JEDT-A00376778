@@ -9,7 +9,7 @@ pipeline {
         IMAGE_NAME        = 'product-api'
         APP_PORT          = '8085'
         // Cambia la IP cada vez que se reinicia el EC2 de Nexus
-        NEXUS_MAVEN_REPO     = 'http://http://184.193.31.56:9181/repository/maven-releases/'
+        NEXUS_MAVEN_REPO     = 'http://184.193.31.56:9181/repository/maven-releases/'
         NEXUS_CREDENTIALS_ID = 'nexus-credentials'
     }
 
