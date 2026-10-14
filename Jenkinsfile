@@ -8,6 +8,9 @@ pipeline {
         PROJECT_KEY       = 'product-api'
         IMAGE_NAME        = 'product-api'
         APP_PORT          = '8085'
+        // Cambia la IP cada vez que se reinicia el EC2 de Nexus
+        NEXUS_MAVEN_REPO     = 'http://http://184.193.31.56:9181/repository/maven-releases/'
+        NEXUS_CREDENTIALS_ID = 'nexus-credentials'
     }
 
     stages {
@@ -71,8 +74,27 @@ pipeline {
             }
             steps {
                 echo '===> [ETAPA 3] Publicando binario JAR inmutable en Sonatype Nexus OSS...'
-                dir('backend') {
-                    sh 'mvn deploy -DskipTests'
+                withCredentials([usernamePassword(credentialsId: "${NEXUS_CREDENTIALS_ID}",
+                                                  usernameVariable: 'NEXUS_USER',
+                                                  passwordVariable: 'NEXUS_PASS')]) {
+                    dir('backend') {
+                        writeFile file: 'jenkins-settings.xml', text: '''<settings>
+  <servers>
+    <server>
+      <id>nexus-releases</id>
+      <username>${env.NEXUS_USER}</username>
+      <password>${env.NEXUS_PASS}</password>
+    </server>
+  </servers>
+</settings>
+'''
+                        sh 'mvn -B -s jenkins-settings.xml deploy -DskipTests -DaltDeploymentRepository=nexus-releases::$NEXUS_MAVEN_REPO'
+                    }
+                }
+            }
+            post {
+                always {
+                    sh 'rm -f backend/jenkins-settings.xml'
                 }
             }
         }
