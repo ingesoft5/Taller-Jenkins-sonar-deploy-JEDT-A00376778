@@ -10,11 +10,23 @@ pipeline {
         APP_PORT          = '8085'
     }
 
+    options {
+        timeout(time: 20, unit: 'MINUTES')
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        skipDefaultCheckout()
+    }
+
     stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
         // =========================================================================
         // ETAPA 1: PRUEBAS Y COBERTURA DE CODIGO (JACOCO)
         // =========================================================================
-        stage('Pruebas & Cobertura JaCoCo') {
+        stage('1. Test & Cobertura JaCoCo') {
             steps {
                 echo '===> [ETAPA 1] Compilando y ejecutando pruebas unitarias e instrumentacion JaCoCo...'
                 dir('backend') {
@@ -32,7 +44,7 @@ pipeline {
         // =========================================================================
         // ETAPA 2: VALIDACION SAST (SONARQUBE) Y BLOQUEO POR QUALITY GATE
         // =========================================================================
-        stage('SonarQube SAST Scan') {
+        stage('2. SonarQube SAST Scan') {
             steps {
                 echo '===> [ETAPA 2] Ejecutando analisis estatico SAST con SonarQube...'
                 dir('backend') {
@@ -47,7 +59,7 @@ pipeline {
             }
         }
 
-        stage('Quality Gate') {
+        stage('2.1. Quality Gate Enforcement') {
             steps {
                 echo '===> [ETAPA 2] Esperando veredicto reactivo del Quality Gate via Webhook...'
                 timeout(time: 5, unit: 'MINUTES') {
@@ -65,7 +77,7 @@ pipeline {
         // =========================================================================
         // ETAPA 3: PUBLICACION DE ARTEFACTOS INMUTABLES (NEXUS + DOCKER)
         // =========================================================================
-        stage('Publicacion en Nexus') {
+        stage('3. Publicacion en Nexus') {
             when {
                 branch 'main'
             }
@@ -77,7 +89,7 @@ pipeline {
             }
         }
 
-        stage('Empaquetar Imagen Docker') {
+        stage('3.1. Empaquetar Imagen Docker') {
             when {
                 branch 'main'
             }
@@ -90,7 +102,7 @@ pipeline {
         // =========================================================================
         // ETAPA 4: DESPLIEGUE CONTINUO (CD) Y SMOKE TEST / HEALTHCHECK
         // =========================================================================
-        stage('Despliegue Continuo (CD)') {
+        stage('4. Despliegue Continuo (CD)') {
             when {
                 branch 'main'
             }
