@@ -3,6 +3,7 @@ package com.icesi.ingesoftv.productapi;
 import com.icesi.ingesoftv.productapi.model.Product;
 import com.icesi.ingesoftv.productapi.repository.ProductRepository;
 import com.icesi.ingesoftv.productapi.service.ProductService;
+import com.icesi.ingesoftv.productapi.service.ProductSkuGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,9 +14,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -85,5 +88,34 @@ class ProductServiceTest {
 
         assertThat(deleted).isTrue();
         verify(productRepository, times(1)).deleteById(1L);
+    }
+
+    @Test
+    @DisplayName("Debe aplicar el descuento al precio del producto")
+    void testCalculateDiscountedPrice() {
+        when(productRepository.findById(1L)).thenReturn(Optional.of(sampleProduct));
+
+        assertThat(productService.calculateDiscountedPrice(1L, new BigDecimal("10")))
+                .isEqualByComparingTo("1305000");
+        assertThat(productService.calculateDiscountedPrice(1L, null))
+                .isEqualByComparingTo("1450000");
+    }
+
+    @Test
+    @DisplayName("Debe lanzar excepción si el producto a descontar no existe")
+    void testCalculateDiscountedPriceNotFound() {
+        when(productRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> productService.calculateDiscountedPrice(99L, BigDecimal.TEN))
+                .isInstanceOf(NoSuchElementException.class);
+    }
+
+    @Test
+    @DisplayName("Debe generar SKU con prefijo de categoría o GEN")
+    void testGenerateSku() {
+        ProductSkuGenerator generator = new ProductSkuGenerator();
+
+        assertThat(generator.generateSku("Audio", 1L)).matches("AUD-1-\\d{6}");
+        assertThat(generator.generateSku(null, 2L)).matches("GEN-2-\\d{6}");
     }
 }

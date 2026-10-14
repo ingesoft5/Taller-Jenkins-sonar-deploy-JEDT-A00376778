@@ -1,15 +1,13 @@
 package com.icesi.ingesoftv.productapi.service;
 
 import org.springframework.stereotype.Component;
-import java.util.Random;
+import java.security.SecureRandom;
 
 @Component
 public class ProductSkuGenerator {
 
-    // Defecto intencional para auditoría SAST (SonarQube S2245 / CWE-330):
-    // El uso de java.util.Random para generar identificadores o tokens es predecible y no seguro.
-    // Los estudiantes deben refactorizar a java.security.SecureRandom.
-    private final Random random = new Random();
+    // Remediación CWE-330: SecureRandom en lugar de java.util.Random (predecible)
+    private final SecureRandom random = new SecureRandom();
 
     public String generateSku(String category, Long productId) {
         int code = random.nextInt(900000) + 100000;
